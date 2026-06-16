@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Camaras BAHIA - Monitor Parte 1</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:Arial,sans-serif;background:#f0f2f5;color:#1a1a1a;font-size:14px;overflow:hidden}
+.topbar{background:#0a3d6b;padding:10px 20px;display:flex;align-items:center;gap:12px;height:46px}
+.topbar h1{color:#fff;font-size:15px;font-weight:700;flex:1}
+.badge{background:#1a6fb5;color:#fff;font-size:11px;padding:3px 10px;border-radius:99px}
+.layout{display:flex;height:calc(100vh - 46px)}
+.main{flex:1;min-width:0;overflow-y:auto;padding:12px 16px}
+.stats{display:flex;gap:8px;margin-bottom:10px}
+.stat{background:#fff;border:1px solid #e0e0e0;border-radius:8px;padding:8px 12px;flex:1;text-align:center}
+.stat .num{font-size:20px;font-weight:700}
+.stat .lbl{font-size:10px;color:#888}
+.stat.on .num{color:#198754}
+.stat.off .num{color:#dc3545}
+.stat.obs .num{color:#856404}
+.controls{display:flex;gap:8px;margin-bottom:8px}
+.controls input,.controls select{padding:6px 10px;border:1px solid #ccc;border-radius:6px;font-size:12px}
+.controls input{flex:1}
+.chips{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px}
+.chip{font-size:10px;padding:3px 9px;border-radius:99px;border:1px solid #ccc;background:#fff;color:#555;cursor:pointer}
+.chip.active{background:#0a3d6b;color:#fff;border-color:#0a3d6b}
+.count{font-size:11px;color:#888;margin-bottom:8px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
+.card{background:#fff;border:1px solid #ddd;border-radius:8px;overflow:hidden}
+.ctop{padding:12px 13px 8px;border-bottom:1px solid #f0f0f0}
+.cname{font-size:14px;font-weight:700;margin-bottom:3px}
+.cip{font-size:12px;color:#888;font-family:monospace}
+.cdot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#ccc;margin-right:4px}
+.cdot.online{background:#198754}
+.cdot.offline{background:#dc3545}
+.cst{font-size:11px;color:#999}
+.cst.online{color:#198754}
+.cst.offline{color:#dc3545}
+.cmeta{margin-top:5px;font-size:11px;color:#aaa}
+.bobs{font-size:9px;padding:1px 6px;border-radius:99px;background:#fff3cd;color:#856404;border:1px solid #ffc107;margin-left:4px}
+.bfuera{font-size:9px;padding:1px 6px;border-radius:99px;background:#f8d7da;color:#842029;border:1px solid #f5c2c7;margin-left:4px}
+.cact{padding:8px 10px;display:flex;gap:5px;flex-wrap:wrap}
+.btn{font-size:11px;padding:5px 10px;border-radius:5px;border:1px solid #ccc;background:#fff;cursor:pointer}
+.btn.iv{border-color:#5a3ea1;color:#5a3ea1}
+.btn.iv:hover{background:#5a3ea1;color:#fff}
+.btn.fuera{border-color:#dc3545;color:#dc3545}
+.btn.ping{border-color:#0a3d6b;color:#0a3d6b}
+.btn.ping:hover{background:#0a3d6b;color:#fff}
+.panel{width:22%;min-width:240px;background:#fff;border-left:2px solid #e0e0e0;display:flex;flex-direction:column;overflow:hidden}
+.phdr{padding:10px 14px;background:#0a3d6b;color:#fff;font-size:13px;font-weight:700;display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+.phdr span{font-size:11px;font-weight:400;opacity:.85}
+.ppingbtn{padding:6px;width:100%;border:none;background:#1a6fb5;color:#fff;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0}
+.ppingbtn:disabled{opacity:.5}
+.ptabs{display:flex;border-bottom:1px solid #e0e0e0;flex-shrink:0}
+.ptab{flex:1;padding:7px 0;font-size:11px;font-weight:700;text-align:center;cursor:pointer;color:#888;border-bottom:2px solid transparent}
+.ptab.active{color:#0a3d6b;border-bottom-color:#0a3d6b}
+.psearch{padding:6px 10px;border-bottom:1px solid #eee;flex-shrink:0}
+.psearch input{width:100%;padding:5px 8px;border:1px solid #ccc;border-radius:5px;font-size:11px}
+.plist{overflow-y:auto;flex:1}
+.prow{display:flex;align-items:center;gap:6px;padding:7px 10px;border-bottom:1px solid #f0f0f0;cursor:pointer}
+.prow:hover{background:#f8f9fa}
+.pdot{width:9px;height:9px;border-radius:50%;background:#ccc;flex-shrink:0}
+.pdot.online{background:#198754}
+.pdot.offline{background:#dc3545}
+.pinfo{flex:1;min-width:0}
+.pname{font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pip{font-size:10px;color:#aaa;font-family:monospace}
+.pst{font-size:10px;font-weight:700;padding:2px 6px;border-radius:99px;white-space:nowrap}
+.pst.online{background:#198754;color:#fff}
+.pst.offline{background:#dc3545;color:#fff}
+.pst.pending{background:#f0f0f0;color:#aaa}
+.pbtn{font-size:10px;padding:2px 7px;border-radius:4px;border:1px solid #0a3d6b;background:#fff;color:#0a3d6b;cursor:pointer;flex-shrink:0}
+.pbtn:hover{background:#0a3d6b;color:#fff}
+.ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:999;justify-content:center;align-items:center}
+.ov.open{display:flex}
+.modal{background:#fff;border-radius:10px;padding:20px;width:340px;max-width:95vw;max-height:90vh;overflow-y:auto;position:relative}
+.modal h2{font-size:14px;font-weight:700;color:#0a3d6b;margin-bottom:12px}
+.mcx{position:absolute;top:10px;right:12px;background:none;border:none;font-size:18px;cursor:pointer;color:#888}
+.mrow{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #f5f5f5;font-size:12px}
+.mrow .ml{color:#999}
+.mrow .mv{font-weight:600;text-align:right}
+.mfoot{margin-top:10px;display:flex;gap:6px;justify-content:flex-end}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <h1>&#128247; CCTV BAHIA</h1>
+  <span class="badge" id="tbadge">0 DVRs</span>
+</div>
+<div class="layout">
+  <div class="main">
+    <div class="stats">
+      <div class="stat"><div class="num" id="st">0</div><div class="lbl">Total</div></div>
+      <div class="stat on"><div class="num" id="so">0</div><div class="lbl">Online</div></div>
+      <div class="stat off"><div class="num" id="sf">0</div><div class="lbl">Offline</div></div>
+      <div class="stat obs"><div class="num" id="sob">0</div><div class="lbl">Con obs.</div></div>
+    </div>
+    <div class="controls">
+      <input type="text" id="srch" placeholder="Buscar sucursal o IP..." oninput="render()">
+      <select id="fest" onchange="render()">
+        <option value="">Todos los estados</option>
+        <option value="online">Online</option>
+        <option value="offline">Offline</option>
+        <option value="pending">Sin verificar</option>
+      </select>
+    </div>
+    <div class="chips" id="chips"></div>
+    <div class="count" id="cnt"></div>
+    <div class="grid" id="grid"></div>
+  </div>
+  <div class="panel">
+    <div class="phdr">Estado DVRs <span id="pcnt">-</span></div>
+    <button class="ppingbtn" id="ppbtn" onclick="pingAll()">&#9654; Verificar estado de todas las EESS</button>
+    <div class="ptabs">
+      <div class="ptab active" id="pt-all" onclick="setTab('all')">Todos</div>
+      <div class="ptab" id="pt-online" onclick="setTab('online')">Online</div>
+      <div class="ptab" id="pt-offline" onclick="setTab('offline')">Offline</div>
+    </div>
+    <div class="psearch"><input type="text" id="psrch" placeholder="Filtrar EESS..." oninput="renderPanel()"></div>
+    <div class="plist" id="plist"></div>
+  </div>
+</div>
+<div class="ov" id="ov" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal">
+    <button class="mcx" onclick="document.getElementById('ov').classList.remove('open')">&#x2715;</button>
+    <h2 id="mtitle"></h2>
+    <div id="mbody"></div>
+    <div class="mfoot">
+      <button class="btn iv" id="miv">&#128250; iVMS-4200</button>
+    </div>
+  </div>
+</div>
+<script>
+var dvrs=[
+{n:"AYMAC",ip:"10.10.20.150",cam:16,ciudad:"ASUNCION",obs:"",tel:"",enc:"",rev:"",fuera:false},
+{n:"Sacramento MM",ip:"192.168.109.90",cam:16,ciudad:"ASUNCION",obs:"",tel:"",enc:"",rev:"",fuera:false},
+{n:"Sacramento Playa",ip:"192.168.109.91",cam:16,ciudad:"ASUNCION",obs:"8 canales sin visualizacion",tel:"",enc:"",rev:"",fuera:false},
+{n:"Capiata MM",ip:"192.168.17.20",cam:16,ciudad:"CAPIATA",obs:"3 canales sin visualizacion",tel:"",enc:"",rev:"",fuera:false},
+{n:"Capiata Playa",ip:"192.168.17.21",cam:16,ciudad:"CAPIATA",obs:"4 canales sin visualizacion",tel:"",enc:"",rev:"",fuera:false},
+{n:"Boggiani",ip:"192.168.18.20",cam:28,ciudad:"ASUNCION",obs:"3 canales sin visualizacion",tel:"",enc:"",rev:"",fuera:false},
+{n:"MRA MM 1",ip:"192.168.19.20",cam:8,ciudad:"MRA",obs:"",tel:"",enc:"",rev:"",fuera:false},
+{n:"MRA MM 2",ip:"192.168.19.21",cam:12,ciudad:"MRA",obs:"",tel:"",enc:"",rev:"",fuera:false},
+{n:"MRA Playa",ip:"192.168.19.22",cam:12,ciudad:"MRA",obs:"5 canales sin visualizacion",tel:"",enc:"",rev:"",fuera:false},
+{n:"Zeballos",ip:"192.168.20.25",cam:16,ciudad:"ASUNCION",obs:"3 canales sin visualizacion",tel:"",enc:"",rev:"",fuera:false},
+{n:"Chaco Iru MM",ip:"192.168.21.20",cam:16,ciudad:"MRA",obs:"Sin conexion",tel:"",enc:"",rev:"",fuera:false},
+{n:"Chaco Iru PLA",ip:"192.168.21.21",cam:13,ciudad:"MRA",obs:"",tel:"",enc:"",rev:"",fuera:false},
+{n:"Autopista Playa",ip:"192.168.22.25",cam:16,ciudad:"ASUNCION",obs:"7 canales sin visualizacion",tel:"",enc:"",rev:"",fuera:false},
+{n:"Autopista MM",ip:"192.168.22.26",cam:16,ciudad:"ASUNCION",obs:"",tel:"",enc:"",rev:"",fuera:false},
+{n:"Ciudad Nueva Playa",ip:"192.168.23.20",cam:16,ciudad:"ASUNCION",obs:"3 canales sin visualizacion",tel:"",enc:"",rev:"",fuera:false},
+{n:"Ciudad Nueva MM",ip:"192.168.23.21",cam:6,ciudad:"ASUNCION",obs:"",tel:"",enc:"",rev:"",fuera:false},
+{n:"Nuestra Sra Asuncion",ip:"192.168.25.20",cam:16,ciudad:"ASUNCION",obs:"1 canal sin visualizacion",tel:"",enc:"",rev:"",fuera:false},
+{n:"Centro Playa",ip:"192.168.26.10",cam:16,ciudad:"ASUNCION",obs:"1 camara sin visualizacion",tel:"",enc:"",rev:"",fuera:false},
+{n:"Centro MM",ip:"192.168.26.20",cam:9,ciudad:"ASUNCION",obs:"",tel:"",enc:"",rev:"",fuera:false},
+{n:"La Paloma",ip:"192.168.28.21",cam:14,ciudad:"LA PALOMA",obs:"1 canal sin visualizacion",tel:"",enc:"",rev:"",fuera:false},
+{n:"Limpio",ip:"192.168.32.20",cam:16,ciudad:"LIMPIO",obs:"2 canales sin visualizacion",tel:"",enc:"",rev:"",fuera:false},
+{n:"Botanico Playa",ip:"192.168.33.20",cam:29,ciudad:"ASUNCION",obs:"",tel:"",enc:"",rev:"",fuera:false},
+{n:"Botanico MM",ip:"192.168.33.21",cam:16,ciudad:"ASUNCION",obs:"1 canal sin visualizacion",tel:"",enc:"",rev:"",fuera:false},
+{n:"Loma Plata Playa",ip:"192.168.34.12",cam:12,ciudad:"LOMA PLATA",obs:"Sin conexion",tel:"",enc:"",rev:"",fuera:false},
+{n:"Loma Plata MM",ip:"192.168.34.13",cam:8,ciudad:"LOMA PLATA",obs:"1 canal sin visualizacion",tel:"",enc:"",rev:"",fuera:false},
+{n:"Acceso Sur 1 MM",ip:"192.168.35.20",cam:14,ciudad:"NEMBY",obs:"",tel:"",enc:"",rev:"",fuera:false},
+{n:"Acceso Sur 1 Playa",ip:"192.168.35.21",cam:8,ciudad:"NEMBY",obs:"",tel:"",enc:"",rev:"",fuera:false},
+{n:"Salado Playa",ip:"192.168.36.20",cam:16,ciudad:"LIMPIO",obs:"",tel:"",enc:"",rev:"",fuera:false},
+{n:"Salado MM",ip:"192.168.36.21",cam:8,ciudad:"LIMPIO",obs:"",tel:"",enc:"",rev:"",fuera:false},
+{n:"Surubii Playa",ip:"192.168.37.20",cam:14,ciudad:"MRA",obs:"6 canales sin visualizacion",tel:"",enc:"",rev:"",fuera:false},
+{n:"Surubii MM",ip:"192.168.37.21",cam:14,ciudad:"MRA",obs:"2 canales sin visualizacion",tel:"",enc:"",rev:"",fuera:false},
+{n:"Expo MM",ip:"192.168.39.20",cam:16,ciudad:"EXPO MRA",obs:"11 canales sin visualizacion",tel:"",enc:"",rev:"",fuera:false},
+{n:"Expo Playa",ip:"192.168.39.21",cam:16,ciudad:"EXPO MRA",obs:"2 canales sin visualizacion",tel:"",enc:"",rev:"",fuera:false},
+{n:"Hernandarias MM",ip:"192.168.40.20",cam:14,ciudad:"HERNANDARIAS",obs:"1 canal sin visualizacion",tel:"",enc:"",rev:"",fuera:false},
+{n:"Hernandarias Playa",ip:"192.168.40.21",cam:8,ciudad:"HERNANDARIAS",obs:"5 canales sin visualizacion",tel:"",enc:"",rev:"",fuera:false},
+{n:"Acceso Sur II MM",ip:"192.168.41.19",cam:16,ciudad:"NEMBY",obs:"",tel:"",enc:"",rev:"",fuera:false},
+{n:"Acceso Sur II Playa",ip:"192.168.41.20",cam:14,ciudad:"NEMBY",obs:"",tel:"",enc:"",rev:"",fuera:false},
+{n:"MOG",ip:"192.168.43.20",cam:16,ciudad:"SAN LORENZO",obs:"4 canales sin visualizacion",tel:"",enc:"",rev:"",fuera:false},
+{n:"America",ip:"192.168.60.20",cam:16,ciudad:"NEMBY",obs:"1 canal sin visualizacion",tel:"",enc:"",rev:"",fuera:false},
+{n:"Cacique Playa",ip:"192.168.61.20",cam:12,ciudad:"LAMBARE",obs:"3 canales sin visualizacion",tel:"",enc:"",rev:"",fuera:false},
+{n:"Cacique MM",ip:"192.168.61.21",cam:12,ciudad:"LAMBARE",obs:"5 canales sin visualizacion",tel:"",enc:"",rev:"",fuera:false},
+{n:"San Nicolas Playa",ip:"192.168.62.20",cam:16,ciudad:"SAN LORENZO",obs:"2 canales sin visualizacion",tel:"",enc:"",rev:"",fuera:false},
+{n:"San Nicolas MM",ip:"192.168.62.21",cam:16,ciudad:"SAN LORENZO",obs:"3 canales sin visualizacion",tel:"",enc:"",rev:"",fuera:false},
+{n:"Villa Elisa Playa",ip:"192.168.64.20",cam:16,ciudad:"VILLA ELISA",obs:"5 canales sin visualizacion",tel:"",enc:"",rev:"",fuera:false},
+{n:"Villa Elisa MM",ip:"192.168.64.21",cam:16,ciudad:"VILLA ELISA",obs:"5 canales sin visualizacion",tel:"",enc:"",rev:"",fuera:false},
+{n:"Tape Pora Playa",ip:"192.168.65.20",cam:15,ciudad:"TAPE PORA",obs:"1 canal sin visualizacion",tel:"",enc:"",rev:"",fuera:false},
+{n:"Tape Pora MM",ip:"192.168.65.21",cam:16,ciudad:"TAPE PORA",obs:"",tel:"",enc:"",rev:"",fuera:false},
+{n:"Alberdi Playa",ip:"192.168.70.20",cam:16,ciudad:"ASUNCION",obs:"5 canales sin visualizacion",tel:"",enc:"",rev:"",fuera:false},
+{n:"Alberdi MM",ip:"192.168.70.21",cam:6,ciudad:"ASUNCION",obs:"2 canales sin visualizacion",tel:"",enc:"",rev:"",fuera:false},
+{n:"Aeropuerto Playa",ip:"192.168.71.20",cam:16,ciudad:"MRA",obs:"6 canales sin visualizacion",tel:"",enc:"",rev:"",fuera:false},
+{n:"Aeropuerto MM",ip:"192.168.71.21",cam:16,ciudad:"MRA",obs:"5 canales sin visualizacion",tel:"",enc:"",rev:"",fuera:false},
+{n:"Fernando",ip:"192.168.72.20",cam:32,ciudad:"ASUNCION",obs:"2 canales sin visualizacion",tel:"",enc:"",rev:"",fuera:false}
+];
+var estados={},filtroCiudad=null,panelTab='all';
+dvrs.forEach(function(d){estados[d.ip]='pending';});
+
+function guardar(){
+  var o={};
+  dvrs.forEach(function(d){o[d.ip]={obs:d.obs,fuera:d.fuera,tel:d.tel,enc:d.enc,rev:d.rev};});
+  try{localStorage.setItem('bahia_p1',JSON.stringify(o));}catch(e){}
+}
+function cargar(){
+  try{
+    var raw=localStorage.getItem('bahia_p1');
+    if(!raw)return;
+    var o=JSON.parse(raw);
+    dvrs.forEach(function(d){
+      if(o[d.ip]){
+        if(o[d.ip].obs!==undefined)d.obs=o[d.ip].obs;
+        if(o[d.ip].fuera!==undefined)d.fuera=o[d.ip].fuera;
+        if(o[d.ip].tel!==undefined)d.tel=o[d.ip].tel;
+        if(o[d.ip].enc!==undefined)d.enc=o[d.ip].enc;
+        if(o[d.ip].rev!==undefined)d.rev=o[d.ip].rev;
+      }
+    });
+  }catch(e){}
+}
+function buildChips(){
+  var seen={},ciu=[];
+  dvrs.forEach(function(d){if(!seen[d.ciudad]){seen[d.ciudad]=true;ciu.push(d.ciudad);}});
+  ciu.sort();
+  var h='<span class="chip active" id="chip-ALL" onclick="setFiltro(null)">Todas ('+dvrs.length+')</span>';
+  ciu.forEach(function(c){
+    var cnt=dvrs.filter(function(d){return d.ciudad===c;}).length;
+    h+='<span class="chip" id="chip-'+c.replace(/[^a-z0-9]/gi,'_')+'" onclick="setFiltro(\''+c+'\')">'+c+' ('+cnt+')</span>';
+  });
+  document.getElementById('chips').innerHTML=h;
+  window._ciu=ciu;
+}
+function setFiltro(c){
+  filtroCiudad=c;
+  document.getElementById('chip-ALL').className='chip'+(c===null?' active':'');
+  (window._ciu||[]).forEach(function(x){
+    var el=document.getElementById('chip-'+x.replace(/[^a-z0-9]/gi,'_'));
+    if(el)el.className='chip'+(x===c?' active':'');
+  });
+  render();
+}
+function updateStats(){
+  var on=0,off=0,ob=0;
+  dvrs.forEach(function(d){
+    if(estados[d.ip]==='online')on++;
+    else if(estados[d.ip]==='offline')off++;
+    if(d.obs)ob++;
+  });
+  document.getElementById('so').textContent=on;
+  document.getElementById('sf').textContent=off;
+  document.getElementById('sob').textContent=ob;
+}
+function render(){
+  var q=(document.getElementById('srch').value||'').toLowerCase();
+  var fe=document.getElementById('fest').value;
+  var list=dvrs.filter(function(d){
+    return(!q||d.n.toLowerCase().indexOf(q)>=0||d.ip.indexOf(q)>=0)&&
+           (!filtroCiudad||d.ciudad===filtroCiudad)&&
+           (!fe||estados[d.ip]===fe);
+  });
+  document.getElementById('cnt').textContent=list.length+' de '+dvrs.length+' DVRs';
+  var grid=document.getElementById('grid');
+  grid.innerHTML='';
+  list.forEach(function(d){
+    var idx=dvrs.indexOf(d);
+    var s=estados[d.ip]||'pending';
+    var slbl=s==='online'?'Online':s==='offline'?'Sin respuesta':s==='checking'?'Verificando...':'Sin verificar';
+    var card=document.createElement('div');card.className='card';
+    var top=document.createElement('div');top.className='ctop';
+    top.innerHTML=
+      '<div class="cname">'+d.n+'</div>'+
+      '<div class="cip">'+d.ip+'&nbsp;&nbsp;<span class="cdot '+s+'"></span><span class="cst '+s+'">'+slbl+'</span></div>'+
+      '<div class="cmeta">'+d.cam+' cam &nbsp; '+d.ciudad+
+        (d.fuera?'<span class="bfuera">Fuera de servicio</span>':d.obs?'<span class="bobs">obs.</span>':'')+
+      '</div>';
+    var act=document.createElement('div');act.className='cact';
+    var b1=document.createElement('button');b1.className='btn iv';b1.textContent='iVMS';
+    b1.onclick=(function(ip,n){return function(){abrirIVMS(ip,n);};})(d.ip,d.n);
+    var b2=document.createElement('button');b2.className='btn';b2.textContent='Detalle';
+    b2.onclick=(function(i){return function(){openModal(i);};})(idx);
+    var b3=document.createElement('button');b3.className='btn ping';b3.textContent='Ping';
+    b3.onclick=(function(ip){return function(){pingCMD(ip);};})(d.ip);
+    var b4=document.createElement('button');
+    b4.className=d.fuera?'btn fuera':'btn';
+    b4.textContent=d.fuera?'Fuera de servicio':'Marcar fuera';
+    b4.onclick=(function(i){return function(){toggleFuera(i);};})(idx);
+    act.appendChild(b1);act.appendChild(b2);act.appendChild(b3);act.appendChild(b4);
+    card.appendChild(top);card.appendChild(act);
+    grid.appendChild(card);
+  });
+  updateStats();
+  renderPanel();
+}
+function renderPanel(){
+  var q=(document.getElementById('psrch').value||'').toLowerCase();
+  var plist=document.getElementById('plist');
+  plist.innerHTML='';
+  var on=0,off=0;
+  dvrs.forEach(function(d,idx){
+    var s=estados[d.ip]||'pending';
+    if(s==='online')on++;
+    else if(s==='offline')off++;
+    if(panelTab==='online'&&s!=='online')return;
+    if(panelTab==='offline'&&s!=='offline')return;
+    if(q&&d.n.toLowerCase().indexOf(q)<0&&d.ip.indexOf(q)<0)return;
+    var slbl=s==='online'?'Online':s==='offline'?'Offline':'---';
+    var row=document.createElement('div');row.className='prow';
+    var dot=document.createElement('div');dot.className='pdot '+s;
+    var info=document.createElement('div');info.className='pinfo';
+    info.innerHTML='<div class="pname">'+d.n+'</div><div class="pip">'+d.ip+'</div>';
+    var st=document.createElement('div');st.className='pst '+s;st.textContent=slbl;
+    var pb=document.createElement('button');pb.className='pbtn';pb.textContent='Ping';
+    pb.onclick=(function(ip){return function(e){e.stopPropagation();pingCMD(ip);};})(d.ip);
+    row.appendChild(dot);row.appendChild(info);row.appendChild(st);row.appendChild(pb);
+    row.onclick=(function(i){return function(){openModal(i);};})(idx);
+    plist.appendChild(row);
+  });
+  document.getElementById('pcnt').textContent=on+' online / '+off+' offline';
+}
+function setTab(t){
+  panelTab=t;
+  ['all','online','offline'].forEach(function(x){
+    document.getElementById('pt-'+x).className='ptab'+(x===t?' active':'');
+  });
+  renderPanel();
+}
+function toggleFuera(idx){dvrs[idx].fuera=!dvrs[idx].fuera;guardar();render();}
+function openModal(idx){
+  var d=dvrs[idx];
+  var s=estados[d.ip]||'pending';
+  document.getElementById('mtitle').textContent=d.n;
+  document.getElementById('mbody').innerHTML=
+    '<div class="mrow"><span class="ml">IP</span><span class="mv"><input id="mip" style="width:100%;border:1px solid #ccc;border-radius:4px;padding:3px 6px;font-family:monospace;font-size:12px" value="'+d.ip+'"></span></div>'+
+    '<div class="mrow"><span class="ml">Camaras</span><span class="mv"><input id="mcam" type="number" style="width:70px;border:1px solid #ccc;border-radius:4px;padding:3px 6px;font-size:12px" value="'+d.cam+'"></span></div>'+
+    '<div class="mrow"><span class="ml">Ciudad</span><span class="mv"><input id="mciu" style="width:100%;border:1px solid #ccc;border-radius:4px;padding:3px 6px;font-size:12px" value="'+d.ciudad+'"></span></div>'+
+    '<div class="mrow"><span class="ml">Estado</span><span class="mv">'+(s==='online'?'<span style="color:#198754">Online</span>':s==='offline'?'<span style="color:#dc3545">Sin respuesta</span>':'Sin verificar')+'</span></div>'+
+    '<div class="mrow"><span class="ml">Telefono</span><span class="mv"><input id="mtel" style="width:100%;border:1px solid #ccc;border-radius:4px;padding:3px 6px;font-size:12px" value="'+(d.tel||'')+'"></span></div>'+
+    '<div class="mrow"><span class="ml">Encargado</span><span class="mv"><input id="menc" style="width:100%;border:1px solid #ccc;border-radius:4px;padding:3px 6px;font-size:12px" value="'+(d.enc||'')+'"></span></div>'+
+    '<div class="mrow"><span class="ml">Revision</span><span class="mv"><input id="mrev" style="width:100%;border:1px solid #ccc;border-radius:4px;padding:3px 6px;font-size:12px" value="'+(d.rev||'')+'"></span></div>'+
+    '<div style="padding:8px 0"><div style="font-size:11px;color:#999;margin-bottom:4px">Observacion</div>'+
+    '<textarea id="mobs" rows="2" style="width:100%;padding:6px;border:1px solid #ccc;border-radius:5px;font-size:12px">'+d.obs+'</textarea></div>'+
+    '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0">'+
+    '<span style="font-size:12px">Fuera de servicio</span>'+
+    '<input type="checkbox" id="mfuera" '+(d.fuera?'checked':'')+' style="width:15px;height:15px;cursor:pointer"></div>'+
+    '<button onclick="guardarModal('+idx+')" style="width:100%;margin-top:8px;padding:7px;background:#0a3d6b;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">Guardar cambios</button>';
+  document.getElementById('mfuera').onchange=function(){dvrs[idx].fuera=this.checked;guardar();render();};
+  document.getElementById('mobs').onchange=function(){dvrs[idx].obs=this.value;guardar();updateStats();};
+  document.getElementById('miv').onclick=function(){abrirIVMS(d.ip,d.n);};
+  document.getElementById('ov').classList.add('open');
+}
+function pingCMD(ip){
+  // Calcular IP del router (mismo segmento, ultimo octeto = 1)
+  var partes=ip.split('.');
+  var routerIp=partes[0]+'.'+partes[1]+'.'+partes[2]+'.1';
+  // Hacer ping al DVR con -t (indefinido)
+  fetch('http://localhost:9876/ping?ip='+ip+'&t=1')
+    .then(function(r){return r.json();})
+    .catch(function(){});
+  // Hacer ping al Router con -t (indefinido)
+  setTimeout(function(){
+    fetch('http://localhost:9876/ping?ip='+routerIp+'&t=1')
+      .then(function(r){return r.json();})
+      .catch(function(){});
+  },300);
+  // Notificacion al usuario
+  fetch('http://localhost:9876/ping?ip='+ip+'&t=1')
+    .catch(function(){
+      alert('Servidor Ping no encontrado.\nEjecuta SETUP-ping.bat como Administrador para instalarlo.\nDVR: '+ip+'\nRouter: '+routerIp);
+    });
+}
+function abrirIVMS(ip, nombre){
+  // Copiar NOMBRE al portapapeles
+  try{
+    var ta=document.createElement('textarea');
+    ta.value=nombre;ta.style.position='fixed';ta.style.opacity='0';
+    document.body.appendChild(ta);ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+  }catch(e){}
+  // Abrir iVMS via servidor local
+  fetch('http://localhost:9876/ivms')
+    .then(function(r){return r.json();})
+    .then(function(d){
+      if(d.ok){
+        alert('iVMS abierto.\nNombre copiado: '+nombre+'\nPega con Ctrl+V para buscar la camara.');
+      } else {
+        alert('Error: '+d.error);
+      }
+    })
+    .catch(function(){
+      alert('Servidor no encontrado.\nEjecuta SETUP-ping.bat como Administrador.');
+    });
+}
+async function checkDvr(ip){
+  estados[ip]='checking';
+  try{
+    var ctrl=new AbortController();
+    var tid=setTimeout(function(){ctrl.abort();},4000);
+    await fetch('http://'+ip,{mode:'no-cors',signal:ctrl.signal});
+    clearTimeout(tid);
+    estados[ip]='online';
+  }catch(e){estados[ip]=e.name==='AbortError'?'offline':'online';}
+}
+async function pingAll(){
+  var btn=document.getElementById('ppbtn');
+  btn.disabled=true;btn.textContent='Verificando...';
+  dvrs.forEach(function(d){estados[d.ip]='checking';});
+  render();
+  await Promise.all(dvrs.map(function(d){return checkDvr(d.ip);}));
+  btn.disabled=false;btn.textContent='\u25b6 Verificar estado de todas las EESS';
+  render();
+}
+window.onload=function(){
+  cargar();
+  document.getElementById('tbadge').textContent=dvrs.length+' DVRs';
+  document.getElementById('st').textContent=dvrs.length;
+  buildChips();
+  render();
+};
+</script>
+</body>
+</html>
